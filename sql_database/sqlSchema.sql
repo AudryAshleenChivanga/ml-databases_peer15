@@ -29,5 +29,29 @@ CREATE TABLE diagnosis (
     diagnosis_id INT AUTO_INCREMENT PRIMARY KEY,
     patient_id INT NOT NULL,
     diagnosis TINYINT(1) NOT NULL,
-    FOREIGN KEY (test_id) REFERENCES medical_tests(test_id)
+    FOREIGN KEY (patient_id) REFERENCES patients(patient_id)
 );
+
+-- Stored Procedure: Calculate Average Age of Patients
+DELIMITER //
+
+CREATE PROCEDURE CalculateAverageAge()
+BEGIN
+    SELECT AVG(age) AS average_age FROM patients;
+END //
+
+DELIMITER ;
+
+-- Trigger: Validate Age Before Insert
+DELIMITER //
+
+CREATE TRIGGER BeforeInsertPatient
+BEFORE INSERT ON patients
+FOR EACH ROW
+BEGIN
+    IF NEW.age < 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Age cannot be negative';
+    END IF;
+END //
+
+DELIMITER ;
