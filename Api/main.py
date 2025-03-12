@@ -1,8 +1,7 @@
 from fastapi import FastAPI, HTTPException
-import mysql.connector
+import pymysql
 import os
 from pydantic import BaseModel
-from mysql.connector import Error
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -13,17 +12,15 @@ db_config = {
     "user": os.getenv("DATABASE_USER", "root"),   # Default to app_user if not set
     "password": os.getenv("DATABASE_PASSWORD", "StrongPassword123!"),  # Default password
     "database": os.getenv("DATABASE_NAME", "liver_disease_db"),  # Default database name
+    "cursorclass": pymysql.cursors.DictCursor  # Use dictionary cursors
 }
 
 # Helper function to connect to the database
 def get_db_connection():
     try:
-        connection = mysql.connector.connect(**db_config)
-        if connection.is_connected():
-            return connection
-        else:
-            raise HTTPException(status_code=500, detail="Unable to connect to the database.")
-    except Error as e:
+        connection = pymysql.connect(**db_config)
+        return connection
+    except pymysql.Error as e:
         raise HTTPException(status_code=500, detail=f"Database connection error: {str(e)}")
 
 # Function to execute SQL from a file
@@ -33,10 +30,25 @@ def execute_sql_file(sql_file: str):
     try:
         with open(sql_file, 'r') as file:
             sql_script = file.read()
-        # Execute the SQL script
-        for result in cursor.execute(sql_script, multi=True):
-            pass
-        connection.commit()
+
+        # Split the SQL script into individual statements
+        sql_statements = [stmt.strip() for stmt in sql_script.split(';') if stmt.strip()]
+
+        # Execute each statement one by one
+        for statement in sql_statements:
+            try:
+                cursor.execute(statement)
+                connection.commit()
+            except pymysql.err.OperationalError as e:
+                # Ignore "database exists" (1007) and "table already exists" (1050) errors
+                if e.args[0] == 1007 or e.args[0] == 1050:
+                    print(f"Ignoring error: {str(e)}")
+                else:
+                    raise e  # Re-raise other errors
+            except pymysql.err.ProgrammingError as e:
+                # Ignore other programming errors (e.g., syntax errors)
+                print(f"Ignoring error: {str(e)}")
+
         print(f"Executed SQL file: {sql_file}")
     except Exception as e:
         print(f"Error executing SQL file {sql_file}: {str(e)}")
@@ -99,7 +111,7 @@ def create_patient(patient: PatientCreate):
 @app.get("/patients/")
 def get_patients():
     connection = get_db_connection()
-    cursor = connection.cursor(dictionary=True)
+    cursor = connection.cursor()
     try:
         query = "SELECT * FROM patients"
         cursor.execute(query)
@@ -174,7 +186,7 @@ def create_medical_test(test: MedicalTestCreate):
 @app.get("/medical_tests/")
 def get_medical_tests():
     connection = get_db_connection()
-    cursor = connection.cursor(dictionary=True)
+    cursor = connection.cursor()
     try:
         query = "SELECT * FROM medical_tests"
         cursor.execute(query)
@@ -206,7 +218,7 @@ def create_diagnosis(diagnosis: DiagnosisCreate):
 @app.get("/diagnosis/")
 def get_diagnoses():
     connection = get_db_connection()
-    cursor = connection.cursor(dictionary=True)
+    cursor = connection.cursor()
     try:
         query = "SELECT * FROM diagnosis"
         cursor.execute(query)

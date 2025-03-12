@@ -1,16 +1,16 @@
--- Create the database
-CREATE DATABASE liver_disease_db;
+-- Create the database (if it doesn't exist)
+CREATE DATABASE IF NOT EXISTS liver_disease_db;
 USE liver_disease_db;
 
 -- Table: patients
-CREATE TABLE patients (
+CREATE TABLE IF NOT EXISTS patients (
     patient_id INT AUTO_INCREMENT PRIMARY KEY,
     age INT NOT NULL,
     gender VARCHAR(10) NOT NULL
 );
 
 -- Table: medical_tests
-CREATE TABLE medical_tests (
+CREATE TABLE IF NOT EXISTS medical_tests (
     test_id INT AUTO_INCREMENT PRIMARY KEY,
     patient_id INT NOT NULL,
     total_bilirubin FLOAT NOT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE medical_tests (
 );
 
 -- Table: diagnosis
-CREATE TABLE diagnosis (
+CREATE TABLE IF NOT EXISTS diagnosis (
     diagnosis_id INT AUTO_INCREMENT PRIMARY KEY,
     patient_id INT NOT NULL,
     diagnosis TINYINT(1) NOT NULL,
@@ -33,25 +33,17 @@ CREATE TABLE diagnosis (
 );
 
 -- Stored Procedure: Calculate Average Age of Patients
-DELIMITER //
-
-CREATE PROCEDURE CalculateAverageAge()
+CREATE PROCEDURE IF NOT EXISTS CalculateAverageAge()
 BEGIN
     SELECT AVG(age) AS average_age FROM patients;
-END //
-
-DELIMITER ;
+END;
 
 -- Trigger: Validate Age Before Insert
-DELIMITER //
-
-CREATE TRIGGER BeforeInsertPatient
+CREATE TRIGGER IF NOT EXISTS BeforeInsertPatient
 BEFORE INSERT ON patients
 FOR EACH ROW
 BEGIN
     IF NEW.age < 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Age cannot be negative';
     END IF;
-END //
-
-DELIMITER ;
+END;
