@@ -1,0 +1,40 @@
+version: "3.8"
+services:
+  db:
+    image: mysql:8.0
+    container_name: mysql-container
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: StrongRootPassword!
+      MYSQL_DATABASE: liver_disease_db
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: StrongPassword123!
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 5s
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sqlSchema.sql:/docker-entrypoint-initdb.d/sqlSchema.sql
+      - ./data.sql:/docker-entrypoint-initdb.d/data.sql
+
+  fastapi-app:
+    build: .
+    container_name: fastapi-app
+    environment:
+      - DATABASE_HOST=db  # Corrected to match the MySQL service name
+      - DATABASE_USER=app_user
+      - DATABASE_PASSWORD=StrongPassword123!
+      - DATABASE_NAME=liver_disease_db
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy  # Ensure MySQL is ready before FastAPI starts
+
+volumes:
+  mysql_data:
