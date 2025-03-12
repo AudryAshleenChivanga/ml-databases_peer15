@@ -1,19 +1,16 @@
--- Drop the database if it exists (use with caution!)
-DROP DATABASE IF EXISTS liver_disease_db;
-
 -- Create the database
 CREATE DATABASE liver_disease_db;
 USE liver_disease_db;
 
 -- Table: patients
-CREATE TABLE IF NOT EXISTS patients (
+CREATE TABLE patients (
     patient_id INT AUTO_INCREMENT PRIMARY KEY,
     age INT NOT NULL,
     gender VARCHAR(10) NOT NULL
 );
 
 -- Table: medical_tests
-CREATE TABLE IF NOT EXISTS medical_tests (
+CREATE TABLE medical_tests (
     test_id INT AUTO_INCREMENT PRIMARY KEY,
     patient_id INT NOT NULL,
     total_bilirubin FLOAT NOT NULL,
@@ -28,7 +25,7 @@ CREATE TABLE IF NOT EXISTS medical_tests (
 );
 
 -- Table: diagnosis
-CREATE TABLE IF NOT EXISTS diagnosis (
+CREATE TABLE diagnosis (
     diagnosis_id INT AUTO_INCREMENT PRIMARY KEY,
     patient_id INT NOT NULL,
     diagnosis TINYINT(1) NOT NULL,
@@ -58,12 +55,3 @@ BEGIN
 END //
 
 DELIMITER ;
-
--- Create a non-root user
-CREATE USER 'app_user'@'%' IDENTIFIED BY 'StrongParam2050!';
-
--- Grant necessary privileges to the user
-GRANT SELECT, INSERT, UPDATE, DELETE ON liver_disease_db.* TO 'app_user'@'%';
-
--- Flush privileges to apply changes
-FLUSH PRIVILEGES;

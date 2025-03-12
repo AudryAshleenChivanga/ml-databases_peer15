@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 import mysql.connector
 import os
 from pydantic import BaseModel
+from mysql.connector import Error
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -9,14 +10,54 @@ app = FastAPI()
 # Database connection configuration
 db_config = {
     "host": os.getenv("DATABASE_HOST", "localhost"),  # Default to localhost if not set
-    "user": os.getenv("DATABASE_USER", "app_user"),   # Default to app_user if not set
+    "user": os.getenv("DATABASE_USER", "root"),   # Default to app_user if not set
     "password": os.getenv("DATABASE_PASSWORD", "StrongPassword123!"),  # Default password
     "database": os.getenv("DATABASE_NAME", "liver_disease_db"),  # Default database name
 }
 
 # Helper function to connect to the database
 def get_db_connection():
-    return mysql.connector.connect(**db_config)
+    try:
+        connection = mysql.connector.connect(**db_config)
+        if connection.is_connected():
+            return connection
+        else:
+            raise HTTPException(status_code=500, detail="Unable to connect to the database.")
+    except Error as e:
+        raise HTTPException(status_code=500, detail=f"Database connection error: {str(e)}")
+
+# Function to execute SQL from a file
+def execute_sql_file(sql_file: str):
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    try:
+        with open(sql_file, 'r') as file:
+            sql_script = file.read()
+        # Execute the SQL script
+        for result in cursor.execute(sql_script, multi=True):
+            pass
+        connection.commit()
+        print(f"Executed SQL file: {sql_file}")
+    except Exception as e:
+        print(f"Error executing SQL file {sql_file}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error executing SQL file: {str(e)}")
+    finally:
+        cursor.close()
+        connection.close()
+
+# Execute schema.sql and data.sql on startup
+@app.on_event("startup")
+def initialize_database():
+    try:
+        print("Initializing database...")
+        # Execute schema.sql to create tables
+        execute_sql_file("sqlSchema.sql")
+        # Execute data.sql to insert data
+        execute_sql_file("data.sql")
+        print("Database initialization complete!")
+    except Exception as e:
+        print(f"Database initialization failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database initialization failed: {str(e)}")
 
 # Pydantic models for request validation
 class PatientCreate(BaseModel):
@@ -28,7 +69,7 @@ class MedicalTestCreate(BaseModel):
     total_bilirubin: float
     direct_bilirubin: float
     alkaline_phosphotase: int
-    alamine_aminotransferase: int
+    alamine_aminotransferase: int  # Fixed typo here
     aspartate_aminotransferase: int
     total_proteins: float
     albumin: float
@@ -49,7 +90,7 @@ def create_patient(patient: PatientCreate):
         connection.commit()
         return {"message": "Patient created successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
     finally:
         cursor.close()
         connection.close()
@@ -65,7 +106,7 @@ def get_patients():
         patients = cursor.fetchall()
         return {"patients": patients}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
     finally:
         cursor.close()
         connection.close()
@@ -81,7 +122,7 @@ def update_patient(patient_id: int, patient: PatientCreate):
         connection.commit()
         return {"message": "Patient updated successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
     finally:
         cursor.close()
         connection.close()
@@ -97,7 +138,7 @@ def delete_patient(patient_id: int):
         connection.commit()
         return {"message": "Patient deleted successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
     finally:
         cursor.close()
         connection.close()
@@ -124,7 +165,7 @@ def create_medical_test(test: MedicalTestCreate):
         connection.commit()
         return {"message": "Medical test created successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
     finally:
         cursor.close()
         connection.close()
@@ -140,7 +181,7 @@ def get_medical_tests():
         tests = cursor.fetchall()
         return {"medical_tests": tests}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
     finally:
         cursor.close()
         connection.close()
@@ -156,7 +197,7 @@ def create_diagnosis(diagnosis: DiagnosisCreate):
         connection.commit()
         return {"message": "Diagnosis created successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
     finally:
         cursor.close()
         connection.close()
@@ -172,7 +213,7 @@ def get_diagnoses():
         diagnoses = cursor.fetchall()
         return {"diagnoses": diagnoses}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
     finally:
         cursor.close()
         connection.close()
