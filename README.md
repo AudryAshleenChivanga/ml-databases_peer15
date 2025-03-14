@@ -120,3 +120,8 @@ patients_collection.insert_many(patients_data_dict)
 1. **Direct prediction**: Use the model directly with CSV data
 2. **API-based prediction**: Fetch data from an API and make predictions
 3. **Test server**: For demonstrations without a database
+
+## **CONTRIBUTIONS**
+- Task 1: **Audry Ashleen Chivanga**
+- Task 2: **Humphrey Nyahoja**
+- Task 3: **Dieudonne Ngum**
