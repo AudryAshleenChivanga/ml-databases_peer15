@@ -57,3 +57,11 @@ We inserted into MongoDB using the insert_many()
 patients_collection.insert_many(patients_data_dict)
 ````
 That's it for our DataBases !
+# Liver Disease Prediction System - Task 3
+
+## Overview
+This system trains a machine learning model to predict liver disease and offers multiple ways to use it:
+
+1. **Direct prediction**: Use the model directly with CSV data
+2. **API-based prediction**: Fetch data from an API and make predictions
+3. **Test server**: For demonstrations without a database
